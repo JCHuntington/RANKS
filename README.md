@@ -20,4 +20,5 @@ Before running RANKS, you must first run once in the same folder the program whi
 
 Example:
 perl control-distribution.pl        #Note: you only need to run this command once.
+
 perl ranks.pl day0reads day15reads -lib mapping -ctrl control-sgrnas -d > output.tsv
