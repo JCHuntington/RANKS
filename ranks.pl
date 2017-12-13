@@ -151,8 +151,6 @@ if($sginf==0){
 	print "Gene\tRANKS_score\tp-value\tFDR\t#_of_sgRNAs_considered\tindividual_sgRNA_info(sgRNA_ID:reads_in_test_sample:reads_in_control_sample:log2_fold-change)\n";
 }
 foreach my $type (("depletion","enrichment")){
-	next if($type eq 'enrichment' && $dep);
-	next if($type eq 'depletion' && $enr);
 	my @sortall=@sort;
 	my %allpv;
 	my %fdr;
