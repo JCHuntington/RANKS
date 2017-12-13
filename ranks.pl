@@ -4,6 +4,7 @@ my $libfile="NA";
 my $ctrlfile="NA";
 my $sginf=0;
 my $dep=0;
+my $enr=0;
 my $help="Usage: perl ranks.pl [control sample sgRNA read counts] [test sample sgRNA read counts] [options] > [results file]
 Input files should be tab-delimited text files.
 Read count file format: First column: read count; Second column: sgRNA ID
@@ -12,7 +13,6 @@ options: -minreads [N] : ignore sgRNAs with fewer than N reads in both samples (
 	 -ctrl [file] : file with control sgRNA IDs (one per line) (Default:all sgRNAs)
 	 -minsg [N] : discard genes with fewer than N sgRNAs possessing the minimal number of reads (default:4)
 	 -i : display information about each sgRNA (sgRNA:test_sample_read_count:control_sample_read_count:log2_fold-change)
-	 -d : calculate sgRNA depletion score only (by default will return two scores for each gene, a negative depletion score and a positive enrichment score)
 Note: Before running RANKS, you must first run once in the same folder the program which generates the control gene scores by typing:
 	perl control-distribution.pl
 ";
@@ -33,8 +33,6 @@ for(my $i=0; $i<@ARGV; $i++){
 		$sgth=$ARGV[$i+1];
 	}elsif($ARGV[$i] eq '-i'){
 		$sginf=1;
-	}elsif($ARGV[$i] eq '-d'){
-		$dep=1;
 	}
 }
 if($libfile eq 'NA'){
@@ -50,7 +48,6 @@ while(<FILE>){
 }
 close FILE;
 }
-
 
 open(FILE, "$libfile");
 while(<FILE>){
@@ -90,6 +87,8 @@ foreach my $sg (keys %allsg){
 		foreach my $gene (keys %{$map{$sg}}){
 			push @{$info{$gene}}, "$sg:$fg{$sg}:$bg{$sg}:".(int($ratio*10)/10);
 			my @reads=($fg{$sg},$bg{$sg});
+			$gbg{$gene}+=$bg{$sg};
+			$gfg{$gene}+=$fg{$sg};
 			next if($fg{$sg}<$minreads && $bg{$sg}<$minreads);
 			$gene{$gene}{$sg}=$ratio;
 		}	
@@ -112,7 +111,6 @@ foreach my $gene (keys %gene){
 	my $ntenrich=0;
 	my @scores;
 	foreach my $sg (keys %{$gene{$gene}}){
-		push @scores, $gene{$gene}{$sg};
 		$score+=$gene{$gene}{$sg};
 		my $nts=0;
 		my $ratio=$gene{$gene}{$sg};
@@ -124,11 +122,9 @@ foreach my $gene (keys %gene){
 		$nts=1 if($nts<=0);
 		$nts++ if($nts<$ntsize-1);
 		my $nts2=$ntsize-$nts;
-		$nts2=1 if($nts2<=0);
 		$nts/=$ntsize;
 		$nts2/=$ntsize;
-		$ntscore+=log($nts);
-		$ntenrich+=log($nts2);
+		$ntscore+=log($nts)-log($nts2);
 		$sg1++;
 	}
 	next if($sg1<$sgth);
@@ -143,6 +139,7 @@ foreach my $gene (keys %gene){
 	my @inf2=($text2,$score2,$gene);
 	push @sort, \@inf;
 	push @sort2, \@inf2;
+	if($score<=0){ $direction{$gene}="depletion";}else{$direction{$gene}="enrichment";}
 }
 
 for(my $sgnum=1; $sgnum<=10; $sgnum++){
@@ -152,7 +149,6 @@ for(my $sgnum=1; $sgnum<=10; $sgnum++){
 	close FILE;
 	$ntsortbysg[$sgnum]=\@ntsort;
 }
-
 if($sginf==0){
 	print "Gene\tRANKS_score\tp-value\tFDR\t#_of_sgRNAs_considered\n";
 }else{
@@ -160,6 +156,7 @@ if($sginf==0){
 }
 foreach my $type (("depletion","enrichment")){
 	next if($type eq 'enrichment' && $dep);
+	next if($type eq 'depletion' && $enr);
 	my @sortall=@sort;
 	my %allpv;
 	my %fdr;
@@ -182,6 +179,7 @@ foreach my $type (("depletion","enrichment")){
 			while($ntsort[$ntrank]>$sortfdr[$x][1] && $ntrank>0){$ntrank--;}
 			$ntrank++;
 			$allpv{$sortfdr[$x][2]}=$ntrank/$ntsize;
+			$allpv{$sortfdr[$x][2]}=1 if($allpv{$sortfdr[$x][2]}>=0.99);
 		}
 	}
 	my @g2=sort {$allpv{$a}<=>$allpv{$b}} keys %allpv;
@@ -202,6 +200,7 @@ foreach my $type (("depletion","enrichment")){
 	 @sortall = sort {$b->[1]<=>$a->[1]} @sortall if($type eq 'enrichment');
 	 for(my $g=0; $g<@sortall; $g++){
 	 	my @s=split /\s+/, $sortall[$g][0];
+ 		next if($direction{$s[0]} ne $type && !$dep && !$enr); 
 		$s[1]=int($s[1]*100)/100;
 		$s[1]=-$s[1] if($type eq 'enrichment');
 		$fdr{$s[0]}=~s/e-\d+$//;
@@ -210,7 +209,7 @@ foreach my $type (("depletion","enrichment")){
 		while($fdr{$s[0]}<1){$fdr{$s[0]}*=10; $tenfold++;}
 		$fdr{$s[0]}=((int($fdr{$s[0]}*100)/100)*10**(-$tenfold))."$exp";
 		splice @s, 2, 0, "$allpv{$s[0]}\t$fdr{$s[0]}";
-		if($sginf==0){print "$s[0]\t$s[1]\t$s[2]\t$s[3]\n";}else{
+		if($sginf==0){print "$s[0]\t$s[1]\t$s[2]\t$s[3]\t$s[4]\t$s[5]\n";}else{
 	 	print join("\t", @s)."\n";}
 	}
 }

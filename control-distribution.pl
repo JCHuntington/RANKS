@@ -3,7 +3,8 @@ my @ntgenes;
 foreach my $i (1..5000000){
 	my $score=0;
 	for(my $x=0; $x<$sgs; $x++){
-		$score+=log(rand(1));
+		my $rank=rand(1);
+		$score+=log($rank)-log(1-$rank);
 	}
 	$score/=$sgs;
 	push @ntgenes, int($score*100)/100;
