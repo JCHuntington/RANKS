@@ -3,8 +3,6 @@ my $sgth=4;
 my $libfile="NA";
 my $ctrlfile="NA";
 my $sginf=0;
-my $dep=0;
-my $enr=0;
 my $help="Usage: perl ranks.pl [control sample sgRNA read counts] [test sample sgRNA read counts] [options] > [results file]
 Input files should be tab-delimited text files.
 Read count file format: First column: read count; Second column: sgRNA ID
@@ -86,9 +84,6 @@ foreach my $sg (keys %allsg){
 	if(exists $map{$sg}){
 		foreach my $gene (keys %{$map{$sg}}){
 			push @{$info{$gene}}, "$sg:$fg{$sg}:$bg{$sg}:".(int($ratio*10)/10);
-			my @reads=($fg{$sg},$bg{$sg});
-			$gbg{$gene}+=$bg{$sg};
-			$gfg{$gene}+=$fg{$sg};
 			next if($fg{$sg}<$minreads && $bg{$sg}<$minreads);
 			$gene{$gene}{$sg}=$ratio;
 		}	
@@ -200,7 +195,7 @@ foreach my $type (("depletion","enrichment")){
 	 @sortall = sort {$b->[1]<=>$a->[1]} @sortall if($type eq 'enrichment');
 	 for(my $g=0; $g<@sortall; $g++){
 	 	my @s=split /\s+/, $sortall[$g][0];
- 		next if($direction{$s[0]} ne $type && !$dep && !$enr); 
+ 		next if($direction{$s[0]} ne $type); 
 		$s[1]=int($s[1]*100)/100;
 		$s[1]=-$s[1] if($type eq 'enrichment');
 		$fdr{$s[0]}=~s/e-\d+$//;
@@ -209,7 +204,7 @@ foreach my $type (("depletion","enrichment")){
 		while($fdr{$s[0]}<1){$fdr{$s[0]}*=10; $tenfold++;}
 		$fdr{$s[0]}=((int($fdr{$s[0]}*100)/100)*10**(-$tenfold))."$exp";
 		splice @s, 2, 0, "$allpv{$s[0]}\t$fdr{$s[0]}";
-		if($sginf==0){print "$s[0]\t$s[1]\t$s[2]\t$s[3]\t$s[4]\t$s[5]\n";}else{
+		if($sginf==0){print "$s[0]\t$s[1]\t$s[2]\t$s[3]\n";}else{
 	 	print join("\t", @s)."\n";}
 	}
 }
