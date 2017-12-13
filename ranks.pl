@@ -84,6 +84,7 @@ foreach my $sg (keys %allsg){
 	if(exists $map{$sg}){
 		foreach my $gene (keys %{$map{$sg}}){
 			push @{$info{$gene}}, "$sg:$fg{$sg}:$bg{$sg}:".(int($ratio*10)/10);
+			my @reads=($fg{$sg},$bg{$sg});
 			next if($fg{$sg}<$minreads && $bg{$sg}<$minreads);
 			$gene{$gene}{$sg}=$ratio;
 		}	
@@ -104,7 +105,6 @@ foreach my $gene (keys %gene){
 	my $sg1=0;
 	my $ntscore=0;
 	my $ntenrich=0;
-	my @scores;
 	foreach my $sg (keys %{$gene{$gene}}){
 		$score+=$gene{$gene}{$sg};
 		my $nts=0;
@@ -120,12 +120,13 @@ foreach my $gene (keys %gene){
 		$nts/=$ntsize;
 		$nts2/=$ntsize;
 		$ntscore+=log($nts)-log($nts2);
+		$ntenrich+=log($nts2)-log($nts);
 		$sg1++;
 	}
 	next if($sg1<$sgth);
 	$score=$ntscore/$sg1;
+	$score2=$ntenrich/$sg1;
 	my $text= "$gene\t$score\t$sg1\t".join("\t", @{$info{$gene}});
-	my $score2=$ntenrich/$sg1;
 	my $text2= "$gene\t$score2\t$sg1\t".join("\t", @{$info{$gene}});
 	unshift @{$info{$gene}}, $sg1;
 	unshift @{$info{$gene}}, $score;
