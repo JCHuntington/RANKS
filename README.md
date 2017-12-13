@@ -22,3 +22,8 @@ Example:
 perl control-distribution.pl        #Note: you only need to run this command once.
 
 perl ranks.pl day0reads day15reads -lib mapping -ctrl control-sgrnas -d > output.tsv
+
+
+
+
+This new version of RANKS (V2.0) produces a single score per gene which captures both sgRNA depletion (negative scores) and sgRNA enrichment (positive scores) instead of producing a separate depletion and enrichment score. It is important to run the new version of the control-distribution.pl script before using the new version of RANKS because the score distribution is different.
